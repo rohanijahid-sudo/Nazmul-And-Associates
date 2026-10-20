@@ -11,6 +11,15 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="site.webmanifest">
   <meta name="theme-color" content="#0284c7">
+
+  <!-- Full Mobile & Desktop App Install Capabilities (PWA) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="N&A Tax">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="N&A Tax OS">
+  <meta name="msapplication-TileColor" content="#0284c7">
+  <meta name="msapplication-tap-highlight" content="no">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -155,6 +164,12 @@
 
           <!-- User Avatar, New Client, Excel, Logout -->
           <div class="flex items-center space-x-2">
+            <button id="btnPWAInstallHeader" onclick="triggerPWAInstall()" class="hidden inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl shadow-xs transition active:scale-95" title="অ্যাপ হিসেবে ইনস্টল করুন">
+              <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+              <span class="hidden sm:inline">ইনস্টল অ্যাপ</span>
+              <span class="sm:hidden">অ্যাপ</span>
+            </button>
+
             <button onclick="exportToExcel()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-xs transition active:scale-95">
               <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
               <span class="hidden sm:inline">ব্যাকআপ</span>
@@ -661,6 +676,58 @@
         <button onclick="closeNewClientModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs">বাতিল</button>
         <button onclick="submitNewClient()" class="flex-1 py-2.5 bg-sky-600 text-white font-bold rounded-xl text-xs shadow-md shadow-sky-200">সংরক্ষণ করুন</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PWA SMART INSTALL FLOATING BANNER (Mobile/Desk)-->
+  <!-- ============================================ -->
+  <div id="pwaInstallBanner" class="hidden fixed bottom-20 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-50 bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-2xl flex items-center justify-between border border-sky-500/40 backdrop-blur-md max-w-md transition-all duration-300">
+    <div class="flex items-center space-x-3">
+      <img src="logo-emblem.png" class="w-10 h-10 object-contain rounded-xl bg-white/10 p-1 flex-shrink-0" alt="App Icon">
+      <div>
+        <p class="text-xs font-black tracking-tight text-white flex items-center space-x-1.5">
+          <span>Nazmul & Associates App</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-sky-500 font-extrabold">PWA</span>
+        </p>
+        <p class="text-[11px] text-slate-300">ফোন বা কম্পিউটারে অ্যাপ হিসেবে ইনস্টল করুন</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2 pl-2">
+      <button onclick="dismissPWABanner()" class="text-slate-400 hover:text-white p-1 text-xs font-bold" title="পরে">✕</button>
+      <button onclick="triggerPWAInstall()" class="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-white font-extrabold text-xs rounded-xl shadow-md shadow-sky-500/30 active:scale-95 transition whitespace-nowrap">
+        ইনস্টল করুন
+      </button>
+    </div>
+  </div>
+
+  <!-- iOS INSTALL BOTTOM SHEET MODAL (iPhone / iPad Safari) -->
+  <div id="iosInstallModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-slate-900 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <img src="logo-emblem.png" class="w-8 h-8 object-contain">
+          <h4 class="text-sm font-black text-slate-900">iPhone-এ অ্যাপ ইনস্টল করুন</h4>
+        </div>
+        <button onclick="closeIOSModal()" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold">✕</button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div class="flex items-start space-x-3">
+          <span class="w-5 h-5 rounded-full bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5">1</span>
+          <p>Safari ব্রাউজারের নিচে <strong class="text-slate-900">Share</strong> বাটনে চাপুন।</p>
+        </div>
+        <div class="flex items-start space-x-3">
+          <span class="w-5 h-5 rounded-full bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5">2</span>
+          <p>একটু নিচে স্ক্রল করে <strong class="text-slate-900">"Add to Home Screen"</strong> (হোম স্ক্রিনে যোগ করুন) সিলেক্ট করুন।</p>
+        </div>
+        <div class="flex items-start space-x-3">
+          <span class="w-5 h-5 rounded-full bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5">3</span>
+          <p>উপরে ডানে <strong class="text-sky-700">"Add"</strong> চাপলেই আপনার আইফোনে অ্যাপ তৈরি হয়ে যাবে!</p>
+        </div>
+      </div>
+      <button onclick="closeIOSModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-extrabold hover:bg-slate-800 transition">
+        ঠিক আছে
+      </button>
     </div>
   </div>
 

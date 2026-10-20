@@ -1,4 +1,31 @@
-// NAZMUL & ASSOCIATES - ADAPTIVE RESPONSIVE ENGINE
+// NAZMUL & ASSOCIATES - SECURE CLOUD & ROLE-BASED ENGINE (FIREBASE AUTH & FIRESTORE)
+
+// 1. FIREBASE CONFIGURATION
+const firebaseConfig = {
+  apiKey: "AIzaSyDLxfuN372j766gRjglMcJ56r7YMw_os_w",
+  authDomain: "nazmul-and-associates.firebaseapp.com",
+  projectId: "nazmul-and-associates",
+  storageBucket: "nazmul-and-associates.firebasestorage.app",
+  messagingSenderId: "7771328252",
+  appId: "1:7771328252:web:5a0bea82129083ad925179",
+  measurementId: "G-L8MC424P7H"
+};
+
+// Initialize Firebase
+let auth, db;
+let isFirebaseReady = false;
+
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    isFirebaseReady = true;
+    console.log("Firebase initialized successfully!");
+  }
+} catch (e) {
+  console.warn("Firebase initialization notice:", e);
+}
 
 function getCleanArray(val) {
   if (Array.isArray(val) && val.length > 0) return val;
@@ -8,7 +35,7 @@ function getCleanArray(val) {
 
 const initialSource = window.APP_INITIAL_DATA || {};
 
-// Master State
+// Master Application State
 let state = {
   settings: initialSource.settings || {
     firmName: "NAZMUL & ASSOCIATES",
@@ -22,6 +49,9 @@ let state = {
   clients: getCleanArray(initialSource.clients),
   tracker: getCleanArray(initialSource.tracker),
   documents: getCleanArray(initialSource.documents),
+  users: [], // Registered staff users
+  currentUser: null,
+  userProfile: null, // { email, role: 'admin' | 'staff', assignedEmployee: 'Jahid', status: 'approved' | 'pending' }
   currentTab: 'dashboard',
   clientTab: 'active',
   trackerFilter: 'All',
@@ -31,33 +61,131 @@ let state = {
   searchQuery: ''
 };
 
-// Check if localStorage has valid updated data
-try {
-  const saved = localStorage.getItem('NA_TAX_MOBILE_FINAL');
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    if (parsed.clients && parsed.clients.length >= 100) {
-      state.clients = parsed.clients;
-      if (parsed.tracker && parsed.tracker.length > 0) state.tracker = parsed.tracker;
-      if (parsed.documents && parsed.documents.length > 0) state.documents = parsed.documents;
-      if (parsed.settings) state.settings = parsed.settings;
+// -------------------------------------------------------------
+// 2. AUTHENTICATION & SECURITY GATE LISTENERS
+// -------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  if (isFirebaseReady) {
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        state.currentUser = user;
+        await checkUserApprovalAndRole(user);
+      } else {
+        state.currentUser = null;
+        state.userProfile = null;
+        showAuthScreen();
+      }
+    });
+  } else {
+    // If running offline/local without internet, allow default admin preview
+    state.userProfile = { role: 'admin', status: 'approved', name: 'Master Admin' };
+    unlockFullApp();
+  }
+});
+
+// Check if user is approved by admin in Firestore
+async function checkUserApprovalAndRole(user) {
+  const email = user.email.toLowerCase();
+
+  // Primary Super Admin Auto-Approved (Account Creator)
+  const isSuperAdminEmail = email.includes('rohanijahid') || email.includes('nazmul') || email.includes('admin');
+
+  try {
+    const userDocRef = db.collection('users').doc(user.uid);
+    const docSnap = await userDocRef.get();
+
+    if (!docSnap.exists) {
+      // First time user registration
+      const newProfile = {
+        uid: user.uid,
+        name: user.displayName || 'Staff Member',
+        email: email,
+        photoURL: user.photoURL || '',
+        role: isSuperAdminEmail ? 'admin' : 'staff',
+        assignedEmployee: matchEmployeeFromEmailOrName(user.displayName, email),
+        status: isSuperAdminEmail ? 'approved' : 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await userDocRef.set(newProfile);
+      state.userProfile = newProfile;
+    } else {
+      state.userProfile = docSnap.data();
+    }
+
+    // Gate verification
+    if (state.userProfile.status === 'approved') {
+      unlockFullApp();
+      listenToLiveCloudData();
+    } else {
+      showPendingApprovalScreen();
+    }
+
+  } catch (err) {
+    console.error("Auth check error:", err);
+    // Fallback for primary user
+    if (isSuperAdminEmail) {
+      state.userProfile = { role: 'admin', status: 'approved', name: user.displayName || 'Admin' };
+      unlockFullApp();
+    } else {
+      showPendingApprovalScreen();
     }
   }
-} catch (err) {
-  console.warn("Storage check notice:", err);
 }
 
-// Guarantee default selected file exists
-if (state.tracker.length > 0) {
-  const hasF130 = state.tracker.some(t => t.fileNo === 'F-130');
-  state.selectedFileForSMS = hasF130 ? 'F-130' : state.tracker[0].fileNo;
-} else if (state.clients.length > 0) {
-  const firstWithFile = state.clients.find(c => c.fileNo);
-  state.selectedFileForSMS = firstWithFile ? firstWithFile.fileNo : 'F-001';
+function matchEmployeeFromEmailOrName(name, email) {
+  const text = (name + ' ' + email).toLowerCase();
+  if (text.includes('sisir')) return 'Sisir';
+  if (text.includes('jahid')) return 'Jahid';
+  if (text.includes('rahman')) return 'Rahman';
+  if (text.includes('milon') || text.includes('sobuj')) return 'Milon & Sobuj';
+  if (text.includes('manna')) return 'Manna';
+  return '';
 }
 
-// RUN ON LOAD
-document.addEventListener('DOMContentLoaded', () => {
+function showAuthScreen() {
+  document.getElementById('authScreen')?.classList.remove('hidden');
+  document.getElementById('pendingApprovalScreen')?.classList.add('hidden');
+  document.getElementById('mainAppWrapper')?.classList.add('opacity-10', 'pointer-events-none');
+}
+
+function showPendingApprovalScreen() {
+  document.getElementById('authScreen')?.classList.add('hidden');
+  document.getElementById('pendingApprovalScreen')?.classList.remove('hidden');
+  document.getElementById('mainAppWrapper')?.classList.add('opacity-10', 'pointer-events-none');
+
+  document.getElementById('pendingUserName').textContent = state.currentUser?.displayName || 'ব্যবহারকারী';
+  document.getElementById('pendingUserEmail').textContent = state.currentUser?.email || '';
+}
+
+function unlockFullApp() {
+  document.getElementById('authScreen')?.classList.add('hidden');
+  document.getElementById('pendingApprovalScreen')?.classList.add('hidden');
+  document.getElementById('mainAppWrapper')?.classList.remove('opacity-10', 'pointer-events-none');
+
+  // Update Avatar & Role Badge
+  const avatar = document.getElementById('userAvatarImg');
+  const roleBadge = document.getElementById('userRoleBadge');
+  if (avatar && state.currentUser?.photoURL) {
+    avatar.src = state.currentUser.photoURL;
+  }
+  if (roleBadge) {
+    const isAdmin = state.userProfile?.role === 'admin';
+    roleBadge.textContent = isAdmin ? 'Super Admin' : (state.userProfile?.assignedEmployee || 'Staff');
+    roleBadge.className = isAdmin ? 
+      "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-800 border border-amber-200" :
+      "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-50 text-sky-800 border border-sky-200";
+  }
+
+  // Hide admin tabs for non-admin staff
+  if (state.userProfile?.role !== 'admin') {
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+  } else {
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    listenToUsersList();
+  }
+
+  // Initialize UI with role-filtered dataset
   renderHeaderMeta();
   renderDashboardView();
   renderTrackerView();
@@ -65,50 +193,211 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDocumentsView();
   populateRequisitionDropdown();
   renderMobileRequisition(state.selectedFileForSMS);
-});
+}
 
-function persistState() {
+// Google Sign-In Trigger
+async function handleGoogleSignIn() {
+  if (!isFirebaseReady) {
+    alert("Firebase লোড হচ্ছে, অনুগ্রহ করে কয়েক সেকেন্ড পর চেষ্টা করুন।");
+    return;
+  }
+  const provider = new firebase.auth.GoogleAuthProvider();
   try {
-    localStorage.setItem('NA_TAX_MOBILE_FINAL', JSON.stringify({
-      settings: state.settings,
-      clients: state.clients,
-      tracker: state.tracker,
-      documents: state.documents
-    }));
-  } catch (e) {
-    console.error("Save state failed", e);
+    await auth.signInWithPopup(provider);
+  } catch (error) {
+    console.error("Sign in failed:", error);
+    alert("লগইন ব্যর্থ হয়েছে: " + error.message);
   }
 }
 
+async function handleSignOut() {
+  if (isFirebaseReady) {
+    await auth.signOut();
+  }
+  showAuthScreen();
+}
+
 // -------------------------------------------------------------
-// 1. TOP HEADER & METRICS
+// 3. ACCOUNT-WISE DATABASE FILTERING (ROLE-BASED CONTROL)
+// -------------------------------------------------------------
+// If a user is staff (e.g. Jahid), they only see Jahid's files!
+// If admin, they see all 340 clients!
+function getFilteredClients() {
+  if (!state.userProfile || state.userProfile.role === 'admin') {
+    return state.clients;
+  }
+  const myEmp = state.userProfile.assignedEmployee;
+  if (!myEmp) return [];
+  return state.clients.filter(c => c.assignedTo && c.assignedTo.includes(myEmp));
+}
+
+function getFilteredTracker() {
+  if (!state.userProfile || state.userProfile.role === 'admin') {
+    return state.tracker;
+  }
+  const myEmp = state.userProfile.assignedEmployee;
+  if (!myEmp) return [];
+  return state.tracker.filter(t => t.assignedTo && t.assignedTo.includes(myEmp));
+}
+
+// -------------------------------------------------------------
+// 4. ADMIN APPROVAL MANAGEMENT (FIRESTORE REALTIME SYNC)
+// -------------------------------------------------------------
+function listenToUsersList() {
+  if (!isFirebaseReady || !db) return;
+  db.collection('users').onSnapshot(snap => {
+    state.users = [];
+    snap.forEach(doc => {
+      state.users.push({ id: doc.id, ...doc.data() });
+    });
+    renderAdminApprovalTable();
+  });
+}
+
+function renderAdminApprovalTable() {
+  const tbody = document.getElementById('adminUsersTableBody');
+  if (!tbody) return;
+
+  let html = '';
+  if (state.users.length === 0) {
+    html = `<tr><td colspan="6" class="p-6 text-center text-slate-400">কোনো নতুন ইউজার নিবন্ধিত হয়নি</td></tr>`;
+  } else {
+    state.users.forEach(u => {
+      const isApproved = u.status === 'approved';
+      const isAdmin = u.role === 'admin';
+
+      html += `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3 font-bold text-slate-900 flex items-center space-x-2">
+            <img src="${u.photoURL || 'https://ui-avatars.com/api/?name=' + u.name}" class="w-6 h-6 rounded-full border border-slate-200">
+            <span>${u.name}</span>
+          </td>
+          <td class="p-3 font-mono text-slate-600">${u.email}</td>
+          <td class="p-3">
+            <select onchange="updateUserAssignedName('${u.id}', this.value)" class="p-1 text-xs border border-slate-200 rounded-lg font-bold text-slate-800">
+              <option value="" ${!u.assignedEmployee ? 'selected' : ''}>-- নির্ধারণ করুন --</option>
+              <option value="Sisir" ${u.assignedEmployee === 'Sisir' ? 'selected' : ''}>শিশির (Sisir)</option>
+              <option value="Jahid" ${u.assignedEmployee === 'Jahid' ? 'selected' : ''}>জাহিদ (Jahid)</option>
+              <option value="Rahman" ${u.assignedEmployee === 'Rahman' ? 'selected' : ''}>রহমান (Rahman)</option>
+              <option value="Milon & Sobuj" ${u.assignedEmployee === 'Milon & Sobuj' ? 'selected' : ''}>মিলন ও সবুজ</option>
+              <option value="Manna" ${u.assignedEmployee === 'Manna' ? 'selected' : ''}>মান্না (Manna)</option>
+            </select>
+          </td>
+          <td class="p-3 font-bold ${isAdmin ? 'text-amber-700' : 'text-sky-700'}">${isAdmin ? 'Super Admin' : 'Staff'}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isApproved ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
+              ${isApproved ? '✓ অনুমোদিত (Approved)' : '⏳ অপেক্ষমাণ (Pending)'}
+            </span>
+          </td>
+          <td class="p-3 text-right space-x-1">
+            ${!isApproved ? `
+              <button onclick="approveUser('${u.id}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs">
+                অনুমোদন দিন (Approve)
+              </button>
+            ` : `
+              <button onclick="revokeUser('${u.id}')" class="px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold border border-rose-200">
+                স্থগিত করুন
+              </button>
+            `}
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  tbody.innerHTML = html;
+}
+
+async function approveUser(userId) {
+  if (!db) return;
+  await db.collection('users').doc(userId).update({ status: 'approved' });
+  alert("ব্যবহারকারীকে সফলভাবে অনুমোদন দেওয়া হয়েছে!");
+}
+
+async function revokeUser(userId) {
+  if (!db) return;
+  if (confirm("এই কর্মীর সিস্টেমে প্রবেশাধিকার স্থগিত করতে চান?")) {
+    await db.collection('users').doc(userId).update({ status: 'pending' });
+  }
+}
+
+async function updateUserAssignedName(userId, empName) {
+  if (!db) return;
+  await db.collection('users').doc(userId).update({ assignedEmployee: empName });
+}
+
+// -------------------------------------------------------------
+// 5. LIVE FIRESTORE CLOUD DATABASE SYNC
+// -------------------------------------------------------------
+function listenToLiveCloudData() {
+  if (!isFirebaseReady || !db) return;
+
+  // Listen to metadata / state
+  db.collection('system').doc('live_data').onSnapshot(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.clients && data.clients.length > 0) state.clients = data.clients;
+      if (data.tracker && data.tracker.length > 0) state.tracker = data.tracker;
+      if (data.documents && data.documents.length > 0) state.documents = data.documents;
+
+      renderHeaderMeta();
+      renderDashboardView();
+      renderTrackerView();
+      renderClientsView();
+      renderDocumentsView();
+    } else {
+      // First cloud seed
+      syncLocalToFirestore();
+    }
+  });
+}
+
+async function syncLocalToFirestore() {
+  if (!isFirebaseReady || !db || state.userProfile?.role !== 'admin') return;
+  try {
+    await db.collection('system').doc('live_data').set({
+      clients: state.clients,
+      tracker: state.tracker,
+      documents: state.documents,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    console.log("Firestore cloud synced successfully!");
+  } catch (e) {
+    console.warn("Firestore sync warning:", e);
+  }
+}
+
+function persistState() {
+  syncLocalToFirestore();
+}
+
+// -------------------------------------------------------------
+// 6. UI RENDERING (HEADER, DASHBOARD, TRACKER, CLIENTS)
 // -------------------------------------------------------------
 function renderHeaderMeta() {
   const ayEl = document.getElementById('headerAY');
   const countEl = document.getElementById('headerClientCount');
+  const visibleClients = getFilteredClients();
+
   if (ayEl) ayEl.textContent = state.settings.assessmentYear || '2026-27';
-  if (countEl) countEl.textContent = `${state.clients.length} জন ক্লায়েন্ট`;
+  if (countEl) countEl.textContent = `${visibleClients.length} জন ক্লায়েন্ট`;
 
   const deskTrkBadge = document.getElementById('deskBadgeTracker');
   const deskClBadge = document.getElementById('deskBadgeClients');
-  if (deskTrkBadge) deskTrkBadge.textContent = state.tracker.length;
-  if (deskClBadge) deskClBadge.textContent = state.clients.length;
+  if (deskTrkBadge) deskTrkBadge.textContent = getFilteredTracker().length;
+  if (deskClBadge) deskClBadge.textContent = visibleClients.length;
 }
 
-// -------------------------------------------------------------
-// 2. ADAPTIVE TAB SWITCHER (DESKTOP TOP TABS + MOBILE BOTTOM DOCK)
-// -------------------------------------------------------------
 function switchTab(tabId) {
   state.currentTab = tabId;
 
-  // Toggle views
   document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
   const activeView = document.getElementById(`view-${tabId}`);
   if (activeView) activeView.classList.remove('hidden');
 
-  const tabList = ['dashboard', 'tracker', 'clients', 'documents', 'requisition'];
+  const tabList = ['dashboard', 'tracker', 'clients', 'documents', 'requisition', 'admin-approval'];
 
-  // Update Desktop Top Tabs
+  // Desktop Tabs
   tabList.forEach(t => {
     const dBtn = document.getElementById(`deskTab-${t}`);
     if (!dBtn) return;
@@ -119,7 +408,7 @@ function switchTab(tabId) {
     }
   });
 
-  // Update Mobile Bottom Dock
+  // Mobile Bottom Dock
   tabList.forEach(t => {
     const mBtn = document.getElementById(`nav-${t}`);
     const wrap = document.getElementById(`iconWrap-${t}`);
@@ -128,13 +417,9 @@ function switchTab(tabId) {
     if (t === tabId) {
       wrap.className = "w-9 h-7 rounded-xl flex items-center justify-center bg-sky-50 text-sky-600 transition-all scale-105";
       mBtn.querySelector('span').className = "text-[10px] font-extrabold mt-0.5 tracking-tight text-sky-700";
-      const svg = wrap.querySelector('svg');
-      if (svg) svg.className = "w-5 h-5 text-sky-600";
     } else {
       wrap.className = "w-9 h-7 rounded-xl flex items-center justify-center text-slate-400 transition-all";
       mBtn.querySelector('span').className = "text-[10px] font-bold mt-0.5 tracking-tight text-slate-400";
-      const svg = wrap.querySelector('svg');
-      if (svg) svg.className = "w-5 h-5 text-slate-400";
     }
   });
 
@@ -143,14 +428,14 @@ function switchTab(tabId) {
   }
 }
 
-// -------------------------------------------------------------
-// 3. DASHBOARD & 1-TAP WHATSAPP REQUISITION
-// -------------------------------------------------------------
 function renderDashboardView() {
-  const activeCount = state.clients.filter(c => c.category === 'Active').length;
-  const irregularCount = state.clients.filter(c => c.category === 'Irregular').length;
-  const pendingCount = state.tracker.filter(t => t.status !== 'Submitted' && t.status !== 'File Close').length;
-  const submittedCount = state.tracker.filter(t => t.status === 'Submitted' || t.status === 'File Close').length;
+  const visibleClients = getFilteredClients();
+  const visibleTracker = getFilteredTracker();
+
+  const activeCount = visibleClients.filter(c => c.category === 'Active').length;
+  const irregularCount = visibleClients.filter(c => c.category === 'Irregular').length;
+  const pendingCount = visibleTracker.filter(t => t.status !== 'Submitted' && t.status !== 'File Close').length;
+  const submittedCount = visibleTracker.filter(t => t.status === 'Submitted' || t.status === 'File Close').length;
 
   document.getElementById('kpiActiveFiles').textContent = activeCount;
   document.getElementById('kpiIrregularFiles').textContent = irregularCount;
@@ -164,9 +449,10 @@ function renderDashboardView() {
 
 function getAllFilesList() {
   const fileMap = new Map();
+  const visibleTracker = getFilteredTracker();
+  const visibleClients = getFilteredClients();
 
-  // 1. First add from tracker
-  state.tracker.forEach(t => {
+  visibleTracker.forEach(t => {
     if (t.fileNo) {
       fileMap.set(t.fileNo, {
         fileNo: t.fileNo,
@@ -176,8 +462,7 @@ function getAllFilesList() {
     }
   });
 
-  // 2. Add from client list if not already present
-  state.clients.forEach(c => {
+  visibleClients.forEach(c => {
     if (c.fileNo && !fileMap.has(c.fileNo)) {
       fileMap.set(c.fileNo, {
         fileNo: c.fileNo,
@@ -187,9 +472,7 @@ function getAllFilesList() {
     }
   });
 
-  return Array.from(fileMap.values()).sort((a, b) => {
-    return a.fileNo.localeCompare(b.fileNo, undefined, { numeric: true });
-  });
+  return Array.from(fileMap.values()).sort((a, b) => a.fileNo.localeCompare(b.fileNo, undefined, { numeric: true }));
 }
 
 function populateQuickFileDropdown() {
@@ -283,7 +566,7 @@ function renderWorkloadTiles() {
     html += `
       <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200/60">
         <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">
+          <div class="w-7 h-7 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">
             ${emp.charAt(0)}
           </div>
           <div>
@@ -303,7 +586,7 @@ function renderWorkloadTiles() {
 }
 
 // -------------------------------------------------------------
-// 4. WORK TRACKER & FILTERS
+// 7. TRACKER (WITH ACCOUNT-WISE FILTERING)
 // -------------------------------------------------------------
 function filterTrackerByStatus(status) {
   state.trackerFilter = status;
@@ -341,8 +624,9 @@ function renderTrackerView() {
   const statusFilter = state.trackerFilter;
   const empFilter = state.trackerEmployeeFilter;
   const q = state.searchQuery.toLowerCase().trim();
+  const visibleTracker = getFilteredTracker();
 
-  const items = state.tracker.filter(item => {
+  const items = visibleTracker.filter(item => {
     let matchStatus = true;
     if (statusFilter === 'Waiting for Docs') matchStatus = item.status === 'Waiting for Docs';
     else if (statusFilter === 'Under Review') matchStatus = (item.status === 'Under Review' || item.status === 'Processing' || item.status === 'On Hold (Issue)');
@@ -363,7 +647,7 @@ function renderTrackerView() {
   });
 
   const countPill = document.getElementById('countPillAll');
-  if (countPill) countPill.textContent = state.tracker.length;
+  if (countPill) countPill.textContent = visibleTracker.length;
 
   let html = '';
   if (items.length === 0) {
@@ -375,7 +659,6 @@ function renderTrackerView() {
 
       html += `
         <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card hover:shadow-md transition space-y-2.5 flex flex-col justify-between">
-          
           <div>
             <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
               <div class="flex items-center space-x-2">
@@ -416,7 +699,6 @@ function renderTrackerView() {
               </button>
             </div>
           </div>
-
         </div>
       `;
     });
@@ -447,9 +729,6 @@ function advanceTrackerStage(fileNo) {
   renderDashboardView();
 }
 
-// -------------------------------------------------------------
-// 5. STATUS PICKER SHEET
-// -------------------------------------------------------------
 function openStatusPicker(fileNo, clientName, currentStatus) {
   state.currentEditingFile = fileNo;
   document.getElementById('sheetFileTitle').textContent = `ফাইল নং: ${fileNo}`;
@@ -490,7 +769,7 @@ function closeStatusSheet() {
 }
 
 // -------------------------------------------------------------
-// 6. CLIENTS VIEW & ON-DEMAND ACTIVATION
+// 8. CLIENTS VIEW
 // -------------------------------------------------------------
 function setClientDirectoryTab(tab) {
   state.clientTab = tab;
@@ -517,14 +796,15 @@ function renderClientsView() {
 
   const isIrregular = state.clientTab === 'irregular';
   const q = state.searchQuery.toLowerCase().trim();
+  const visibleClients = getFilteredClients();
 
-  const activeCount = state.clients.filter(c => c.category === 'Active').length;
-  const irregularCount = state.clients.filter(c => c.category === 'Irregular').length;
+  const activeCount = visibleClients.filter(c => c.category === 'Active').length;
+  const irregularCount = visibleClients.filter(c => c.category === 'Irregular').length;
 
   document.getElementById('badgeActiveCount').textContent = activeCount;
   document.getElementById('badgeIrregularCount').textContent = irregularCount;
 
-  const items = state.clients.filter(c => {
+  const items = visibleClients.filter(c => {
     const matchCategory = isIrregular ? (c.category === 'Irregular') : (c.category === 'Active');
     const matchSearch = !q ||
       (c.clientName && c.clientName.toLowerCase().includes(q)) ||
@@ -541,7 +821,6 @@ function renderClientsView() {
     items.forEach(c => {
       html += `
         <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card hover:shadow-md transition space-y-2.5 flex flex-col justify-between">
-          
           <div>
             <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
               <span class="text-xs font-mono font-black ${c.fileNo ? 'text-sky-700 bg-sky-50 border border-sky-100' : 'text-slate-400 bg-slate-100'} px-2 py-0.5 rounded-md">
@@ -582,7 +861,6 @@ function renderClientsView() {
               `}
             </div>
           </div>
-
         </div>
       `;
     });
@@ -641,7 +919,7 @@ function directWhatsApp(fileNo) {
 }
 
 // -------------------------------------------------------------
-// 7. DOCUMENTS LOG
+// 9. DOCUMENTS LOG
 // -------------------------------------------------------------
 function renderDocumentsView() {
   const container = document.getElementById('mobileDocList');
@@ -708,7 +986,7 @@ function openNewDocModal() {
 }
 
 // -------------------------------------------------------------
-// 8. PRINT REQUISITION
+// 10. PRINT REQUISITION
 // -------------------------------------------------------------
 function populateRequisitionDropdown() {
   const sel = document.getElementById('mobileReqSelector');
@@ -774,12 +1052,11 @@ function renderMobileRequisition(fileNo) {
 }
 
 // -------------------------------------------------------------
-// 9. SEARCH & EXCEL BACKUP
+// 11. SEARCH & BACKUP
 // -------------------------------------------------------------
 function handleGlobalAppSearch(q) {
   state.searchQuery = q;
 
-  // Sync mobile and desktop search inputs
   const mInput = document.getElementById('appSearchInputMobile');
   const dInput = document.getElementById('appSearchInputDesktop');
   if (mInput && mInput.value !== q) mInput.value = q;
@@ -817,7 +1094,7 @@ function exportToExcel() {
 }
 
 // -------------------------------------------------------------
-// 10. NEW CLIENT MODAL
+// 12. NEW CLIENT MODAL
 // -------------------------------------------------------------
 function openNewClientModal() {
   document.getElementById('newClientModal').classList.remove('hidden');

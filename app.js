@@ -1158,3 +1158,108 @@ function submitNewClient() {
   closeNewClientModal();
   alert("নতুন ক্লায়েন্ট সফলভাবে যুক্ত হয়েছে!");
 }
+
+// ========================================================
+// PROGRESSIVE WEB APP (PWA) INSTALL & LIFECYCLE ENGINE
+// ========================================================
+
+// 1. Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => {
+        console.log('[PWA] Service Worker registered with scope:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('[PWA] Service Worker registration failed:', err);
+      });
+  });
+}
+
+// 2. Global Install Prompt State
+let deferredPWAInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPWAInstallPrompt = e;
+  console.log('[PWA] Native Install Prompt captured and ready!');
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (!isStandalone) {
+    const banner = document.getElementById('pwaInstallBanner');
+    const btnHeader = document.getElementById('btnPWAInstallHeader');
+    if (btnHeader) btnHeader.classList.remove('hidden');
+    
+    // Show floating banner if user hasn't dismissed it in this session
+    if (banner && !sessionStorage.getItem('na_pwa_dismissed')) {
+      banner.classList.remove('hidden');
+    }
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] Application installed successfully!');
+  deferredPWAInstallPrompt = null;
+  const banner = document.getElementById('pwaInstallBanner');
+  const btnHeader = document.getElementById('btnPWAInstallHeader');
+  if (banner) banner.classList.add('hidden');
+  if (btnHeader) btnHeader.classList.add('hidden');
+});
+
+// Check on load (for iOS or already installed status)
+window.addEventListener('DOMContentLoaded', () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  if (isStandalone) {
+    console.log('[PWA] Running inside standalone native app mode!');
+    return;
+  }
+
+  // On non-standalone iOS, display install triggers
+  const btnHeader = document.getElementById('btnPWAInstallHeader');
+  if (btnHeader) btnHeader.classList.remove('hidden');
+
+  if (isIOS && !sessionStorage.getItem('na_pwa_dismissed')) {
+    const banner = document.getElementById('pwaInstallBanner');
+    if (banner) banner.classList.remove('hidden');
+  }
+});
+
+function triggerPWAInstall() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    const iosModal = document.getElementById('iosInstallModal');
+    if (iosModal) iosModal.classList.remove('hidden');
+    return;
+  }
+
+  if (deferredPWAInstallPrompt) {
+    deferredPWAInstallPrompt.prompt();
+    deferredPWAInstallPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('[PWA] User accepted the installation!');
+      } else {
+        console.log('[PWA] User dismissed the installation dialog');
+      }
+      deferredPWAInstallPrompt = null;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.add('hidden');
+    });
+  } else {
+    // If browser hasn't fired beforeinstallprompt or on desktop browsers
+    alert("আপনার ব্রাউজারের মেনু (⋮ অথবা ব্রাউজার এড্রেস বারের ডানে Install আইকন) থেকে 'Install App' বা 'Add to Home Screen' চাপুন।");
+  }
+}
+
+function dismissPWABanner() {
+  const banner = document.getElementById('pwaInstallBanner');
+  if (banner) banner.classList.add('hidden');
+  sessionStorage.setItem('na_pwa_dismissed', 'true');
+}
+
+function closeIOSModal() {
+  const iosModal = document.getElementById('iosInstallModal');
+  if (iosModal) iosModal.classList.add('hidden');
+}
+

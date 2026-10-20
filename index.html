@@ -10,6 +10,11 @@
   <!-- SheetJS for Excel Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+  <!-- Firebase v10 CDN Scripts (Compatibility for Seamless Browser Execution) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -27,7 +32,6 @@
           boxShadow: {
             'dock': '0 -8px 30px -4px rgba(0, 0, 0, 0.08), 0 -2px 6px -1px rgba(0, 0, 0, 0.04)',
             'card': '0 2px 10px -2px rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-            'pop': '0 12px 32px -6px rgba(2, 132, 199, 0.25)',
           }
         }
       }
@@ -37,18 +41,13 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
     
-    * {
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { -webkit-tap-highlight-color: transparent; }
     body {
       font-family: 'Plus Jakarta Sans', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Print styles */
     @media print {
       body * { visibility: hidden; }
       #print-area, #print-area * { visibility: visible; }
@@ -62,443 +61,516 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
 
-  <!-- TOP APP BAR (ADAPTIVE: DESKTOP EXPANSIVE HEADER + MOBILE APP BAR) -->
-  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      
-      <!-- Top Row: Brand, Search, Top Actions -->
-      <div class="flex items-center justify-between h-16">
-        
-        <!-- Brand & Live Badge -->
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-700 flex items-center justify-center text-white font-black text-lg shadow-md shadow-sky-200">
-            N
-          </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <h1 class="text-sm md:text-base font-extrabold text-slate-900 leading-tight">NAZMUL & ASSOCIATES</h1>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse"></span> Live
-              </span>
-            </div>
-            <p class="text-[11px] font-semibold text-slate-500">
-              করবর্ষ: <span id="headerAY">2026-27</span> • <strong id="headerClientCount" class="text-sky-700">340 জন ক্লায়েন্ট</strong>
-            </p>
-          </div>
-        </div>
-
-        <!-- Global Search (Desktop Centered) -->
-        <div class="hidden md:flex flex-1 max-w-md mx-8">
-          <div class="relative w-full">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-            </div>
-            <input type="text" id="appSearchInputDesktop" oninput="handleGlobalAppSearch(this.value)" placeholder="যেকোনো ক্লায়েন্ট, ফাইল নং, টিন বা মোবাইল খুঁজুন..." 
-              class="w-full pl-9 pr-8 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 transition font-medium text-slate-800">
-          </div>
-        </div>
-
-        <!-- Top Right Actions -->
-        <div class="flex items-center space-x-2">
-          <button onclick="exportToExcel()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-xs transition active:scale-95">
-            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            <span class="hidden sm:inline">এক্সেল ব্যাকআপ</span>
-          </button>
-          
-          <button onclick="openNewClientModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-md shadow-sky-200 transition active:scale-95">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-            <span>+ নতুন ক্লায়েন্ট</span>
-          </button>
-        </div>
-
+  <!-- ======================================================== -->
+  <!-- 0. AUTHENTICATION & APPROVAL SCREENS (SHIELD)           -->
+  <!-- ======================================================== -->
+  
+  <!-- SCREEN A: LOGIN REQUIRED MODAL / OVERLAY -->
+  <div id="authScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-6 border border-slate-100">
+      <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-600 to-blue-700 flex items-center justify-center text-white font-black text-2xl mx-auto shadow-xl shadow-sky-200">
+        N
+      </div>
+      <div>
+        <h2 class="text-lg font-black text-slate-900 tracking-tight">NAZMUL & ASSOCIATES</h2>
+        <p class="text-xs font-bold text-sky-700 mt-0.5 uppercase tracking-wider">Tax & VAT Management OS</p>
+        <p class="text-xs text-slate-500 mt-2">সিস্টেমে প্রবেশের জন্য আপনার অফিসিয়াল গুগল অ্যাকাউন্ট দিয়ে লগইন করুন</p>
       </div>
 
-      <!-- Search Bar for Mobile (< 768px) -->
-      <div class="md:hidden pb-2.5">
-        <div class="relative w-full">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-          </div>
-          <input type="text" id="appSearchInputMobile" oninput="handleGlobalAppSearch(this.value)" placeholder="নাম, ফাইল নং, টিন বা মোবাইল লিখে খুঁজুন..." 
-            class="w-full pl-9 pr-8 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 transition font-medium text-slate-800">
-        </div>
-      </div>
+      <button onclick="handleGoogleSignIn()" class="w-full py-3 px-4 bg-white hover:bg-slate-50 border border-slate-300 rounded-2xl text-xs font-extrabold text-slate-800 flex items-center justify-center space-x-3 shadow-sm hover:shadow transition active:scale-95">
+        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <span>Google দিয়ে লগইন করুন</span>
+      </button>
 
-      <!-- DESKTOP NAVIGATION TABS (Visible only on md and larger screens) -->
-      <nav class="hidden md:flex space-x-1 border-t border-slate-100 py-1.5 text-xs font-bold text-slate-600">
-        <button onclick="switchTab('dashboard')" id="deskTab-dashboard" class="desk-nav-btn active px-4 py-2 rounded-xl bg-sky-50 text-sky-700 transition flex items-center space-x-2">
-          <span>ড্যাশবোর্ড (Dashboard)</span>
-        </button>
-        <button onclick="switchTab('tracker')" id="deskTab-tracker" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
-          <span>ওয়ার্ক ট্র্যাকার (Work Tracker)</span>
-          <span id="deskBadgeTracker" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-700">49</span>
-        </button>
-        <button onclick="switchTab('clients')" id="deskTab-clients" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
-          <span>ক্লায়েন্ট ডিরেক্টরি (Clients)</span>
-          <span id="deskBadgeClients" class="px-1.5 py-0.2 rounded-full text-[10px] bg-sky-100 text-sky-800">340</span>
-        </button>
-        <button onclick="switchTab('documents')" id="deskTab-documents" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
-          <span>ডকুমেন্ট চেকলিস্ট (Doc Log)</span>
-        </button>
-        <button onclick="switchTab('requisition')" id="deskTab-requisition" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
-          <span>চিঠি প্রিন্ট (Ready Requisition)</span>
-        </button>
-      </nav>
-
+      <p class="text-[11px] text-slate-400">অ্যাডমিন অনুমতি ছাড়া ডেটা দৃশ্যমান হবে না</p>
     </div>
-  </header>
+  </div>
 
-
-  <!-- MAIN CONTAINER (FULL-WIDTH EXPANSIVE ON DESKTOP, COMPACT ON MOBILE) -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6 pb-24 md:pb-10">
-
-    <!-- ============================================ -->
-    <!-- VIEW 1: DASHBOARD                           -->
-    <!-- ============================================ -->
-    <div id="view-dashboard" class="space-y-5 app-view">
-      
-      <!-- 4 Top KPI Stat Cards (2 cols mobile, 4 cols desktop) -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        
-        <!-- Active Files Card -->
-        <div onclick="switchTab('clients'); setClientDirectoryTab('active');" class="bg-gradient-to-br from-blue-600 to-sky-600 p-4 rounded-2xl text-white shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-blue-100">চলমান ফাইল (Active)</span>
-            <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
-            </div>
-          </div>
-          <p id="kpiActiveFiles" class="text-2xl md:text-3xl font-black mt-2">149</p>
-          <p class="text-[11px] text-blue-100 mt-0.5">টিমে দায়িত্বপ্রাপ্ত • কাজ চলছে</p>
-        </div>
-
-        <!-- Irregular On-Demand Card -->
-        <div onclick="switchTab('clients'); setClientDirectoryTab('irregular');" class="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-2xl text-white shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-amber-100">অন-ডিমান্ড অনিয়মিত পুল</span>
-            <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-          </div>
-          <p id="kpiIrregularFiles" class="text-2xl md:text-3xl font-black mt-2">98</p>
-          <p class="text-[11px] text-amber-100 mt-0.5">অনিয়মিত • এলে এসাইন হবে</p>
-        </div>
-
-        <!-- Pending Work Card -->
-        <div onclick="switchTab('tracker')" class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500">পেন্ডিং কাজ (In Progress)</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
-          </div>
-          <p id="kpiPendingWork" class="text-2xl md:text-3xl font-black text-rose-600 mt-2">26</p>
-          <p class="text-[11px] text-slate-400 mt-0.5">কাগজপত্র / রিভিউ বাকি</p>
-        </div>
-
-        <!-- Submitted Card -->
-        <div onclick="switchTab('tracker')" class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500">জমা সম্পন্ন (Submitted)</span>
-            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <p id="kpiSubmittedFiles" class="text-2xl md:text-3xl font-black text-emerald-600 mt-2">23</p>
-          <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">রিটার্ন দাখিল সফল</p>
-        </div>
-
+  <!-- SCREEN B: APPROVAL PENDING GATE -->
+  <div id="pendingApprovalScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-4 border border-amber-200">
+      <div class="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-black">
+        ⏳
       </div>
+      <h3 class="text-base font-extrabold text-slate-900">অনুমোদনের জন্য অপেক্ষমাণ</h3>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        স্বাগতম, <strong id="pendingUserName" class="text-slate-900">ব্যবহারকারী</strong>!<br>
+        আপনার ইমেইল: <span id="pendingUserEmail" class="font-mono text-sky-700 font-bold">-</span><br><br>
+        নিরাপত্তার স্বার্থে আপনার অ্যাকাউন্টটি এখনো সক্রিয় করা হয়নি। প্রধান অ্যাডমিন অনুমোদন (Approval) দিলে আপনি সাথে সাথে সিস্টেমে প্রবেশ করতে পারবেন।
+      </p>
+      <div class="pt-2">
+        <button onclick="handleSignOut()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+          অন্য একাউন্টে লগইন / লগআউট
+        </button>
+      </div>
+    </div>
+  </div>
 
-      <!-- Two Column Layout on Desktop (12 Cols) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+  <!-- ======================================================== -->
+  <!-- MAIN APP WRAPPER (Shown only when approved/logged-in)    -->
+  <!-- ======================================================== -->
+  <div id="mainAppWrapper" class="flex-1 flex flex-col justify-between">
+
+    <!-- TOP HEADER -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <!-- Left: 1-Tap WhatsApp Requisition Engine (7 Cols Desktop) -->
-        <div class="lg:col-span-7 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card space-y-3.5 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center justify-between h-16">
+          
+          <!-- Brand & Role Badge -->
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-700 flex items-center justify-center text-white font-black text-lg shadow-md shadow-sky-200">
+              N
+            </div>
+            <div>
               <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
-                </div>
-                <div>
-                  <h3 class="text-sm font-extrabold text-slate-900 leading-tight">১-ট্যাপ WhatsApp রিকুইজিশন মেসেজ জেনারেটর</h3>
-                  <p class="text-[11px] text-slate-500">ফাইল নির্বাচন করলেই বাকি থাকা কাগজপত্রের তালিকা তৈরি হয়ে যাবে</p>
-                </div>
+                <h1 class="text-sm md:text-base font-extrabold text-slate-900 leading-tight">NAZMUL & ASSOCIATES</h1>
+                <span id="userRoleBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-50 text-sky-800 border border-sky-200">
+                  Admin
+                </span>
               </div>
-              <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">অটোমেটিক</span>
-            </div>
-
-            <!-- Dropdown File Selector -->
-            <div class="mt-3">
-              <label class="block text-xs font-bold text-slate-700 mb-1">যেকোনো ক্লায়েন্টের ফাইল নির্বাচন করুন:</label>
-              <select id="quickFileSelect" onchange="handleQuickFileChange(this.value)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                <!-- Dynamically populated via JS with ALL files -->
-              </select>
-            </div>
-
-            <!-- Message Preview Card -->
-            <div class="mt-3 bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2">
-              <div class="flex items-center justify-between text-xs">
-                <span id="previewClientTitle" class="font-bold text-slate-900">-</span>
-                <span id="previewDocCount" class="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md text-[10px] border border-rose-200">-</span>
-              </div>
-              <p id="previewMissingList" class="text-xs text-slate-700 leading-relaxed font-sans whitespace-pre-line bg-white p-3 rounded-lg border border-slate-200 shadow-xs max-h-48 overflow-y-auto">
-                মেসেজ প্রিভিউ লোড হচ্ছে...
+              <p class="text-[11px] font-semibold text-slate-500">
+                করবর্ষ: <span id="headerAY">2026-27</span> • <strong id="headerClientCount" class="text-sky-700">340 জন ক্লায়েন্ট</strong>
               </p>
             </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2.5">
-            <button onclick="copyGeneratedMessage()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition">
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
-              <span>মেসেজ কপি করুন</span>
-            </button>
-            <button onclick="sendQuickWhatsApp()" class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow-md shadow-emerald-200 transition">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
-              <span>WhatsApp এ পাঠান</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Right: Team Workload (5 Cols Desktop) -->
-        <div class="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card space-y-3.5 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div class="flex items-center space-x-2">
-                <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                <h3 class="text-sm font-extrabold text-slate-900 leading-tight">টিমের কাজের বণ্টন (Workload)</h3>
+          <!-- Global Search (Desktop) -->
+          <div class="hidden md:flex flex-1 max-w-md mx-8">
+            <div class="relative w-full">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
               </div>
-              <span class="text-[10px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">৫ জন কর্মী</span>
-            </div>
-
-            <div id="mobileEmployeeList" class="mt-3 space-y-2.5">
-              <!-- Rendered via JS -->
+              <input type="text" id="appSearchInputDesktop" oninput="handleGlobalAppSearch(this.value)" placeholder="যেকোনো ক্লায়েন্ট, ফাইল নং, টিন বা মোবাইল খুঁজুন..." 
+                class="w-full pl-9 pr-8 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 transition font-medium text-slate-800">
             </div>
           </div>
 
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>অ্যাসাইন ছাড়া ফাইল: <strong class="text-amber-700 font-bold">৯৮টি</strong></span>
-            <button onclick="switchTab('clients'); setClientDirectoryTab('irregular');" class="text-sky-600 hover:underline font-bold">অন-ডিমান্ড পুল দেখুন →</button>
+          <!-- User Avatar, New Client, Excel, Logout -->
+          <div class="flex items-center space-x-2">
+            <button onclick="exportToExcel()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-xs transition active:scale-95">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+              <span class="hidden sm:inline">ব্যাকআপ</span>
+            </button>
+            
+            <button onclick="openNewClientModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-md shadow-sky-200 transition active:scale-95">
+              <span>+ ক্লায়েন্ট</span>
+            </button>
+
+            <!-- User Avatar & Sign Out -->
+            <div class="flex items-center space-x-1 pl-1">
+              <img id="userAvatarImg" src="https://ui-avatars.com/api/?name=User&background=0284c7&color=fff" class="w-8 h-8 rounded-full border border-slate-200 shadow-xs" title="প্রোফাইল">
+              <button onclick="handleSignOut()" title="লগআউট" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Search Bar for Mobile -->
+        <div class="md:hidden pb-2.5">
+          <div class="relative w-full">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+            </div>
+            <input type="text" id="appSearchInputMobile" oninput="handleGlobalAppSearch(this.value)" placeholder="নাম, ফাইল নং, টিন বা মোবাইল লিখে খুঁজুন..." 
+              class="w-full pl-9 pr-8 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 transition font-medium text-slate-800">
           </div>
         </div>
 
-      </div>
-
-    </div>
-
-
-    <!-- ============================================ -->
-    <!-- VIEW 2: WORK TRACKER                        -->
-    <!-- ============================================ -->
-    <div id="view-tracker" class="space-y-4 app-view hidden">
-      
-      <!-- Filter Bar -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1 text-xs">
-          <button onclick="filterTrackerByStatus('All')" id="btnTrkAll" class="tracker-filter-pill active px-3.5 py-1.5 rounded-full font-bold bg-sky-600 text-white whitespace-nowrap shadow-xs transition">
-            সব ফাইল (<span id="countPillAll">49</span>)
+        <!-- DESKTOP NAVIGATION TABS -->
+        <nav class="hidden md:flex space-x-1 border-t border-slate-100 py-1.5 text-xs font-bold text-slate-600">
+          <button onclick="switchTab('dashboard')" id="deskTab-dashboard" class="desk-nav-btn active px-4 py-2 rounded-xl bg-sky-50 text-sky-700 transition flex items-center space-x-2">
+            <span>ড্যাশবোর্ড (Dashboard)</span>
           </button>
-          <button onclick="filterTrackerByStatus('Waiting for Docs')" id="btnTrkDocs" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
-            কাগজের অপেক্ষা
+          <button onclick="switchTab('tracker')" id="deskTab-tracker" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
+            <span>ওয়ার্ক ট্র্যাকার (Work Tracker)</span>
+            <span id="deskBadgeTracker" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-700">49</span>
           </button>
-          <button onclick="filterTrackerByStatus('Under Review')" id="btnTrkReview" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
-            রিভিউ ও প্রসেসিং
+          <button onclick="switchTab('clients')" id="deskTab-clients" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
+            <span>ক্লায়েন্ট ডিরেক্টরি (Clients)</span>
+            <span id="deskBadgeClients" class="px-1.5 py-0.2 rounded-full text-[10px] bg-sky-100 text-sky-800">340</span>
           </button>
-          <button onclick="filterTrackerByStatus('Ready for Submit')" id="btnTrkReady" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
-            জমার প্রস্তুতি
+          <button onclick="switchTab('documents')" id="deskTab-documents" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
+            <span>ডকুমেন্ট চেকলিস্ট (Doc Log)</span>
           </button>
-          <button onclick="filterTrackerByStatus('Submitted')" id="btnTrkDone" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
-            জমা সম্পন্ন
+          <button onclick="switchTab('requisition')" id="deskTab-requisition" class="desk-nav-btn px-4 py-2 rounded-xl hover:bg-slate-100 transition flex items-center space-x-2">
+            <span>চিঠি প্রিন্ট (Ready Requisition)</span>
           </button>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <select id="filterTrackerEmployeeSelect" onchange="filterTrackerByEmployee(this.value)" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none">
-            <option value="All">সব কর্মী</option>
-            <option value="Sisir">শিশির (Sisir)</option>
-            <option value="Jahid">জাহিদ (Jahid)</option>
-            <option value="Rahman">রহমান (Rahman)</option>
-            <option value="Milon & Sobuj">মিলন ও সবুজ</option>
-            <option value="Manna">মান্না (Manna)</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Tracker Task Grid (1 Col mobile, 2 cols tablet, 3 cols desktop) -->
-      <div id="mobileTrackerCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <!-- Rendered via JS -->
-      </div>
-
-    </div>
-
-
-    <!-- ============================================ -->
-    <!-- VIEW 3: CLIENT DIRECTORY                    -->
-    <!-- ============================================ -->
-    <div id="view-clients" class="space-y-4 app-view hidden">
-      
-      <!-- Segmented Bar & Stats -->
-      <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-card flex flex-wrap items-center justify-between gap-3">
-        <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold w-full sm:w-auto">
-          <button onclick="setClientDirectoryTab('active')" id="tabBtnClientActive" class="py-2 px-4 rounded-lg bg-white text-sky-700 shadow-xs transition">
-            রেগুলার ফাইল (<span id="badgeActiveCount">149</span>)
+          <!-- ADMIN APPROVAL TAB (Admin Only) -->
+          <button onclick="switchTab('admin-approval')" id="deskTab-admin-approval" class="desk-nav-btn admin-only px-4 py-2 rounded-xl hover:bg-amber-50 text-amber-800 transition flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>অ্যাকাউন্ট অনুমোদন (Approval Panel)</span>
           </button>
-          <button onclick="setClientDirectoryTab('irregular')" id="tabBtnClientIrregular" class="py-2 px-4 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center space-x-1">
-            <span class="w-2 h-2 rounded-full bg-amber-500 mr-1"></span>
-            <span>অন-ডিমান্ড পুল (<span id="badgeIrregularCount">98</span>)</span>
-          </button>
-        </div>
+        </nav>
 
-        <div id="irregularNoticeBox" class="hidden text-xs text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
-          ⚡ <strong>অন-ডিমান্ড ক্লায়েন্ট:</strong> এরা অফিসে আসলেই <strong>"+ এক ক্লিকে একটিভ"</strong> বাটনে চাপ দিন।
-        </div>
       </div>
+    </header>
 
-      <!-- Clients Grid (1 Col mobile, 2 cols tablet, 3 cols desktop) -->
-      <div id="mobileClientCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <!-- Rendered via JS -->
-      </div>
+    <!-- MAIN VIEWPORT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6 pb-24 md:pb-10">
 
-    </div>
-
-
-    <!-- ============================================ -->
-    <!-- VIEW 4: DOCUMENT CHECKLIST HUB              -->
-    <!-- ============================================ -->
-    <div id="view-documents" class="space-y-4 app-view hidden">
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-card flex items-center justify-between">
-        <div>
-          <h3 class="text-sm font-extrabold text-slate-900">ডকুমেন্ট রিকুইজিশন ও চেকলিস্ট ট্র্যাকার</h3>
-          <p class="text-xs text-slate-500">ট্যাপ করে বাকি বা রিসিভড স্ট্যাটাস পরিবর্তন করুন</p>
-        </div>
-        <button onclick="openNewDocModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm active:scale-95 transition">
-          + নতুন কাগজ
-        </button>
-      </div>
-
-      <div id="mobileDocList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <!-- Rendered via JS -->
-      </div>
-    </div>
-
-
-    <!-- ============================================ -->
-    <!-- VIEW 5: PRINTABLE READY REQUISITION          -->
-    <!-- ============================================ -->
-    <div id="view-requisition" class="space-y-4 app-view hidden">
-      
-      <!-- Top Action Bar -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-card flex flex-wrap items-center justify-between gap-3 no-print max-w-4xl mx-auto">
-        <div class="flex items-center space-x-2 flex-1 max-w-md">
-          <label class="text-xs font-bold text-slate-700 whitespace-nowrap">ফাইল সিলেক্ট:</label>
-          <select id="mobileReqSelector" onchange="renderMobileRequisition(this.value)" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none">
-            <!-- Populated via JS -->
-          </select>
-        </div>
-        <button onclick="window.print()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-sm active:scale-95 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.077-.32-2.224-.32-3.329 0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.105-.08 2.252-.32 3.329M6.72 13.829a8.995 8.995 0 00-2.47 5.921c-.08.62.404 1.25 1.026 1.25h17.448c.622 0 1.106-.63 1.026-1.25a8.995 8.995 0 00-2.47-5.921M6.72 13.829A8.966 8.966 0 0112 12c1.928 0 3.71.607 5.28 1.829M12 9v4m0 0l-1.5-1.5m1.5 1.5l1.5-1.5"/></svg>
-          <span>অফিশিয়াল প্যাডে প্রিন্ট / PDF</span>
-        </button>
-      </div>
-
-      <!-- Printable A4 Format Letterhead -->
-      <div id="print-area" class="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-card text-slate-900 space-y-5 max-w-4xl mx-auto">
+      <!-- ============================================ -->
+      <!-- VIEW 1: DASHBOARD                           -->
+      <!-- ============================================ -->
+      <div id="view-dashboard" class="space-y-5 app-view">
         
-        <div class="text-center border-b-2 border-slate-900 pb-4">
-          <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-wide uppercase" id="pFirmName">NAZMUL & ASSOCIATES</h2>
-          <p class="text-xs font-bold text-sky-700 uppercase tracking-wider mt-1">TAX VAT Individual & Corporate Consultancy</p>
-          <p class="text-[11px] text-slate-500 mt-1" id="pFirmContact">Saiham Sky View Tower, Level 15-D, Bijoy Nagar, Dhaka • Mobile: +880 1898891224</p>
-        </div>
-
-        <div class="text-center">
-          <span class="inline-block px-4 py-1 bg-slate-100 text-slate-800 text-xs font-black uppercase tracking-wider rounded border border-slate-300">
-            Income Tax Document Requisition
-          </span>
-        </div>
-
-        <!-- Meta Grid -->
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs grid grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <p><span class="text-slate-400">তারিখ:</span> <strong id="pDate">-</strong></p>
-            <p><span class="text-slate-400">ক্লায়েন্ট:</span> <strong id="pClientName" class="text-slate-900 text-sm">-</strong></p>
-            <p><span class="text-slate-400">ফাইল নম্বর:</span> <strong id="pFileNo" class="text-sky-700 font-mono text-sm">-</strong></p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div onclick="switchTab('clients'); setClientDirectoryTab('active');" class="bg-gradient-to-br from-blue-600 to-sky-600 p-4 rounded-2xl text-white shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-blue-100">চলমান ফাইল (Active)</span>
+              <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+              </div>
+            </div>
+            <p id="kpiActiveFiles" class="text-2xl md:text-3xl font-black mt-2">149</p>
+            <p class="text-[11px] text-blue-100 mt-0.5">দায়িত্বপ্রাপ্ত ফাইল</p>
           </div>
-          <div class="space-y-1 text-right">
-            <p><span class="text-slate-400">ই-টিন (TIN):</span> <strong id="pTIN" class="font-mono text-slate-900">-</strong></p>
-            <p><span class="text-slate-400">করবর্ষ:</span> <strong>2026-27</strong></p>
-            <p><span class="text-slate-400">আয়বর্ষ:</span> <strong>2025-26</strong></p>
+
+          <div onclick="switchTab('clients'); setClientDirectoryTab('irregular');" class="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-2xl text-white shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-amber-100">অন-ডিমান্ড পুল</span>
+              <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <p id="kpiIrregularFiles" class="text-2xl md:text-3xl font-black mt-2">98</p>
+            <p class="text-[11px] text-amber-100 mt-0.5">অনিয়মিত • এলে এসাইন</p>
+          </div>
+
+          <div onclick="switchTab('tracker')" class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500">পেন্ডিং কাজ</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+            </div>
+            <p id="kpiPendingWork" class="text-2xl md:text-3xl font-black text-rose-600 mt-2">26</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">কাগজপত্র / রিভিউ বাকি</p>
+          </div>
+
+          <div onclick="switchTab('tracker')" class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card hover:shadow-lg transition cursor-pointer active:scale-[0.98]">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500">জমা সম্পন্ন (Submitted)</span>
+              <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p id="kpiSubmittedFiles" class="text-2xl md:text-3xl font-black text-emerald-600 mt-2">23</p>
+            <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">রিটার্ন দাখিল সফল</p>
           </div>
         </div>
 
-        <p class="text-xs text-slate-700 leading-relaxed">
-          সম্মানিত ক্লায়েন্ট, ২০২৬-২৭ করবর্ষের জন্য আপনার আয়কর রিটার্ন যথাসময়ে দাখিলের সুবিধার্থে নিম্নলিখিত প্রয়োজনীয় কাগজপত্র ও তথ্যাদি অবিলম্বে অফিসে প্রেরণের অনুরোধ করা হলো:
-        </p>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- WhatsApp Requisition Engine -->
+          <div class="lg:col-span-7 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card space-y-3.5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-extrabold text-slate-900 leading-tight">১-ট্যাপ WhatsApp রিকুইজিশন মেসেজ জেনারেটর</h3>
+                    <p class="text-[11px] text-slate-500">ফাইল নির্বাচন করলেই বাকি থাকা কাগজপত্রের তালিকা তৈরি হয়ে যাবে</p>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">অটোমেটিক</span>
+              </div>
 
-        <div class="border border-slate-200 rounded-xl overflow-hidden">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-100 border-b border-slate-200 text-slate-800 font-bold">
-              <tr>
-                <th class="p-2.5 w-12 text-center">নং</th>
-                <th class="p-2.5">প্রয়োজনীয় কাগজপত্র</th>
-                <th class="p-2.5">বিবরণ / একাউন্ট নং</th>
-                <th class="p-2.5 text-center w-24">অবস্থা</th>
-              </tr>
-            </thead>
-            <tbody id="pDocTable" class="divide-y divide-slate-100">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
+              <div class="mt-3">
+                <label class="block text-xs font-bold text-slate-700 mb-1">যেকোনো ক্লায়েন্টের ফাইল নির্বাচন করুন:</label>
+                <select id="quickFileSelect" onchange="handleQuickFileChange(this.value)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </select>
+              </div>
+
+              <div class="mt-3 bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span id="previewClientTitle" class="font-bold text-slate-900">-</span>
+                  <span id="previewDocCount" class="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md text-[10px] border border-rose-200">-</span>
+                </div>
+                <p id="previewMissingList" class="text-xs text-slate-700 leading-relaxed font-sans whitespace-pre-line bg-white p-3 rounded-lg border border-slate-200 shadow-xs max-h-48 overflow-y-auto">
+                  মেসেজ লোড হচ্ছে...
+                </p>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2.5">
+              <button onclick="copyGeneratedMessage()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+                <span>মেসেজ কপি</span>
+              </button>
+              <button onclick="sendQuickWhatsApp()" class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow-md shadow-emerald-200 transition">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
+                <span>WhatsApp এ পাঠান</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Team Workload -->
+          <div class="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card space-y-3.5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                  <h3 class="text-sm font-extrabold text-slate-900 leading-tight">টিমের কাজের বণ্টন (Workload)</h3>
+                </div>
+                <span class="text-[10px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">লাইভ সিঙ্ক</span>
+              </div>
+
+              <div id="mobileEmployeeList" class="mt-3 space-y-2.5">
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>অ্যাসাইন ছাড়া ফাইল: <strong class="text-amber-700 font-bold">৯৮টি</strong></span>
+              <button onclick="switchTab('clients'); setClientDirectoryTab('irregular');" class="text-sky-600 hover:underline font-bold">অন-ডিমান্ড পুল দেখুন →</button>
+            </div>
+          </div>
         </div>
 
-        <div class="pt-12 flex justify-between items-end text-xs text-slate-600">
-          <div><p class="font-bold border-t border-slate-400 pt-1">গ্রাহকের স্বাক্ষর</p></div>
-          <div class="text-right"><p class="font-bold border-t border-slate-400 pt-1">NAZMUL & ASSOCIATES</p></div>
+      </div>
+
+
+      <!-- ============================================ -->
+      <!-- VIEW 2: WORK TRACKER                        -->
+      <!-- ============================================ -->
+      <div id="view-tracker" class="space-y-4 app-view hidden">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1 text-xs">
+            <button onclick="filterTrackerByStatus('All')" id="btnTrkAll" class="tracker-filter-pill active px-3.5 py-1.5 rounded-full font-bold bg-sky-600 text-white whitespace-nowrap shadow-xs transition">
+              সব ফাইল (<span id="countPillAll">49</span>)
+            </button>
+            <button onclick="filterTrackerByStatus('Waiting for Docs')" id="btnTrkDocs" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
+              কাগজের অপেক্ষা
+            </button>
+            <button onclick="filterTrackerByStatus('Under Review')" id="btnTrkReview" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
+              রিভিউ ও প্রসেসিং
+            </button>
+            <button onclick="filterTrackerByStatus('Ready for Submit')" id="btnTrkReady" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
+              জমার প্রস্তুতি
+            </button>
+            <button onclick="filterTrackerByStatus('Submitted')" id="btnTrkDone" class="tracker-filter-pill px-3 py-1.5 rounded-full font-semibold bg-white border border-slate-200 text-slate-700 whitespace-nowrap hover:bg-slate-50 transition">
+              জমা সম্পন্ন
+            </button>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <select id="filterTrackerEmployeeSelect" onchange="filterTrackerByEmployee(this.value)" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none">
+              <option value="All">সব কর্মী</option>
+              <option value="Sisir">শিশির (Sisir)</option>
+              <option value="Jahid">জাহিদ (Jahid)</option>
+              <option value="Rahman">রহমান (Rahman)</option>
+              <option value="Milon & Sobuj">মিলন ও সবুজ</option>
+              <option value="Manna">মান্না (Manna)</option>
+            </select>
+          </div>
         </div>
 
+        <div id="mobileTrackerCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        </div>
       </div>
 
-    </div>
 
-  </main>
+      <!-- ============================================ -->
+      <!-- VIEW 3: CLIENT DIRECTORY                    -->
+      <!-- ============================================ -->
+      <div id="view-clients" class="space-y-4 app-view hidden">
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-card flex flex-wrap items-center justify-between gap-3">
+          <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold w-full sm:w-auto">
+            <button onclick="setClientDirectoryTab('active')" id="tabBtnClientActive" class="py-2 px-4 rounded-lg bg-white text-sky-700 shadow-xs transition">
+              রেগুলার ফাইল (<span id="badgeActiveCount">149</span>)
+            </button>
+            <button onclick="setClientDirectoryTab('irregular')" id="tabBtnClientIrregular" class="py-2 px-4 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center space-x-1">
+              <span class="w-2 h-2 rounded-full bg-amber-500 mr-1"></span>
+              <span>অন-ডিমান্ড পুল (<span id="badgeIrregularCount">98</span>)</span>
+            </button>
+          </div>
 
+          <div id="irregularNoticeBox" class="hidden text-xs text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+            ⚡ <strong>অন-ডিমান্ড ক্লায়েন্ট:</strong> এরা অফিসে আসলেই <strong>"+ এক ক্লিকে একটিভ"</strong> বাটনে চাপ দিন।
+          </div>
+        </div>
 
-  <!-- MOBILE BOTTOM DOCK (VISIBLE ONLY ON MOBILE & TABLET, HIDDEN ON DESKTOP) -->
-  <nav class="md:hidden bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-3 pt-2 pb-3 flex justify-between items-center fixed bottom-0 inset-x-0 z-50 shadow-dock no-print">
-    
-    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-sky-600 transition active:scale-90">
-      <div class="w-9 h-7 rounded-xl flex items-center justify-center bg-sky-50 transition-all" id="iconWrap-dashboard">
-        <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+        <div id="mobileClientCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        </div>
       </div>
-      <span class="text-[10px] font-extrabold mt-0.5 tracking-tight text-sky-700">ড্যাশবোর্ড</span>
-    </button>
 
-    <button onclick="switchTab('tracker')" id="nav-tracker" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
-      <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-tracker">
-        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>
+
+      <!-- ============================================ -->
+      <!-- VIEW 4: DOCUMENT CHECKLIST HUB              -->
+      <!-- ============================================ -->
+      <div id="view-documents" class="space-y-4 app-view hidden">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-card flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900">ডকুমেন্ট রিকুইজিশন ও চেকলিস্ট ট্র্যাকার</h3>
+            <p class="text-xs text-slate-500">ট্যাপ করে বাকি বা রিসিভড স্ট্যাটাস পরিবর্তন করুন</p>
+          </div>
+          <button onclick="openNewDocModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm active:scale-95 transition">
+            + নতুন কাগজ
+          </button>
+        </div>
+
+        <div id="mobileDocList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        </div>
       </div>
-      <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">ট্র্যাকার</span>
-    </button>
 
-    <button onclick="switchTab('clients')" id="nav-clients" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
-      <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-clients">
-        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+
+      <!-- ============================================ -->
+      <!-- VIEW 5: PRINTABLE READY REQUISITION          -->
+      <!-- ============================================ -->
+      <div id="view-requisition" class="space-y-4 app-view hidden">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-card flex flex-wrap items-center justify-between gap-3 no-print max-w-4xl mx-auto">
+          <div class="flex items-center space-x-2 flex-1 max-w-md">
+            <label class="text-xs font-bold text-slate-700 whitespace-nowrap">ফাইল সিলেক্ট:</label>
+            <select id="mobileReqSelector" onchange="renderMobileRequisition(this.value)" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none">
+            </select>
+          </div>
+          <button onclick="window.print()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-sm active:scale-95 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.077-.32-2.224-.32-3.329 0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.105-.08 2.252-.32 3.329M6.72 13.829a8.995 8.995 0 00-2.47 5.921c-.08.62.404 1.25 1.026 1.25h17.448c.622 0 1.106-.63 1.026-1.25a8.995 8.995 0 00-2.47-5.921M6.72 13.829A8.966 8.966 0 0112 12c1.928 0 3.71.607 5.28 1.829M12 9v4m0 0l-1.5-1.5m1.5 1.5l1.5-1.5"/></svg>
+            <span>অফিশিয়াল প্যাডে প্রিন্ট / PDF</span>
+          </button>
+        </div>
+
+        <div id="print-area" class="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-card text-slate-900 space-y-5 max-w-4xl mx-auto">
+          <div class="text-center border-b-2 border-slate-900 pb-4">
+            <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-wide uppercase" id="pFirmName">NAZMUL & ASSOCIATES</h2>
+            <p class="text-xs font-bold text-sky-700 uppercase tracking-wider mt-1">TAX VAT Individual & Corporate Consultancy</p>
+            <p class="text-[11px] text-slate-500 mt-1" id="pFirmContact">Saiham Sky View Tower, Level 15-D, Bijoy Nagar, Dhaka • Mobile: +880 1898891224</p>
+          </div>
+
+          <div class="text-center">
+            <span class="inline-block px-4 py-1 bg-slate-100 text-slate-800 text-xs font-black uppercase tracking-wider rounded border border-slate-300">
+              Income Tax Document Requisition
+            </span>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <p><span class="text-slate-400">তারিখ:</span> <strong id="pDate">-</strong></p>
+              <p><span class="text-slate-400">ক্লায়েন্ট:</span> <strong id="pClientName" class="text-slate-900 text-sm">-</strong></p>
+              <p><span class="text-slate-400">ফাইল নম্বর:</span> <strong id="pFileNo" class="text-sky-700 font-mono text-sm">-</strong></p>
+            </div>
+            <div class="space-y-1 text-right">
+              <p><span class="text-slate-400">ই-টিন (TIN):</span> <strong id="pTIN" class="font-mono text-slate-900">-</strong></p>
+              <p><span class="text-slate-400">করবর্ষ:</span> <strong>2026-27</strong></p>
+              <p><span class="text-slate-400">আয়বর্ষ:</span> <strong>2025-26</strong></p>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-700 leading-relaxed">
+            সম্মানিত ক্লায়েন্ট, ২০২৬-২৭ করবর্ষের জন্য আপনার আয়কর রিটার্ন যথাসময়ে দাখিলের সুবিধার্থে নিম্নলিখিত প্রয়োজনীয় কাগজপত্র ও তথ্যাদি অবিলম্বে অফিসে প্রেরণের অনুরোধ করা হলো:
+          </p>
+
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-100 border-b border-slate-200 text-slate-800 font-bold">
+                <tr>
+                  <th class="p-2.5 w-12 text-center">নং</th>
+                  <th class="p-2.5">প্রয়োজনীয় কাগজপত্র</th>
+                  <th class="p-2.5">বিবরণ / একাউন্ট নং</th>
+                  <th class="p-2.5 text-center w-24">অবস্থা</th>
+                </tr>
+              </thead>
+              <tbody id="pDocTable" class="divide-y divide-slate-100">
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pt-12 flex justify-between items-end text-xs text-slate-600">
+            <div><p class="font-bold border-t border-slate-400 pt-1">গ্রাহকের স্বাক্ষর</p></div>
+            <div class="text-right"><p class="font-bold border-t border-slate-400 pt-1">NAZMUL & ASSOCIATES</p></div>
+          </div>
+        </div>
       </div>
-      <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">ক্লায়েন্টস</span>
-    </button>
 
-    <button onclick="switchTab('documents')" id="nav-documents" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
-      <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-documents">
-        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l2.25 2.25 4.5-4.5"/></svg>
+
+      <!-- ============================================ -->
+      <!-- VIEW 6: ADMIN APPROVAL PANEL (SUPER ADMIN)   -->
+      <!-- ============================================ -->
+      <div id="view-admin-approval" class="space-y-4 app-view hidden">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-card">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                <span>🛡️ স্টাফ অ্যাকাউন্ট অনুমোদন ও কন্ট্রোল প্যানেল</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">যেসব কর্মী গুগল লগইন করেছে তাদের অনুমোদন দিন ও দায়িত্বপ্রাপ্ত নাম নির্ধারণ করুন</p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 bg-amber-100 text-amber-900 rounded-full">Super Admin Access</span>
+          </div>
+
+          <!-- Pending Users Table -->
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                  <th class="p-3">কর্মী / নাম</th>
+                  <th class="p-3">গুগল ইমেইল</th>
+                  <th class="p-3">দায়িত্বপ্রাপ্ত নাম (Assigned Name)</th>
+                  <th class="p-3">ভূমিকা (Role)</th>
+                  <th class="p-3">বর্তমান অবস্থা</th>
+                  <th class="p-3 text-right">অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTableBody" class="divide-y divide-slate-100">
+                <!-- Dynamically populated via Firebase -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">ডকুমেন্টস</span>
-    </button>
 
-    <button onclick="switchTab('requisition')" id="nav-requisition" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
-      <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-requisition">
-        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.077-.32-2.224-.32-3.329 0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.105-.08 2.252-.32 3.329M6.72 13.829a8.995 8.995 0 00-2.47 5.921c-.08.62.404 1.25 1.026 1.25h17.448c.622 0 1.106-.63 1.026-1.25a8.995 8.995 0 00-2.47-5.921M6.72 13.829A8.966 8.966 0 0112 12c1.928 0 3.71.607 5.28 1.829M12 9v4m0 0l-1.5-1.5m1.5 1.5l1.5-1.5"/></svg>
-      </div>
-      <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">চিঠি প্রিন্ট</span>
-    </button>
+    </main>
 
-  </nav>
+
+    <!-- MOBILE BOTTOM DOCK (MOBILE ONLY) -->
+    <nav class="md:hidden bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-3 pt-2 pb-3 flex justify-between items-center fixed bottom-0 inset-x-0 z-40 shadow-dock no-print">
+      
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-sky-600 transition active:scale-90">
+        <div class="w-9 h-7 rounded-xl flex items-center justify-center bg-sky-50 transition-all" id="iconWrap-dashboard">
+          <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+        </div>
+        <span class="text-[10px] font-extrabold mt-0.5 tracking-tight text-sky-700">ড্যাশবোর্ড</span>
+      </button>
+
+      <button onclick="switchTab('tracker')" id="nav-tracker" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
+        <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-tracker">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>
+        </div>
+        <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">ট্র্যাকার</span>
+      </button>
+
+      <button onclick="switchTab('clients')" id="nav-clients" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
+        <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-clients">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+        </div>
+        <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">ক্লায়েন্টস</span>
+      </button>
+
+      <button onclick="switchTab('documents')" id="nav-documents" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
+        <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-documents">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l2.25 2.25 4.5-4.5"/></svg>
+        </div>
+        <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">ডকুমেন্টস</span>
+      </button>
+
+      <button onclick="switchTab('requisition')" id="nav-requisition" class="nav-item flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 transition active:scale-90">
+        <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all" id="iconWrap-requisition">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.077-.32-2.224-.32-3.329 0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.105-.08 2.252-.32 3.329M6.72 13.829a8.995 8.995 0 00-2.47 5.921c-.08.62.404 1.25 1.026 1.25h17.448c.622 0 1.106-.63 1.026-1.25a8.995 8.995 0 00-2.47-5.921M6.72 13.829A8.966 8.966 0 0112 12c1.928 0 3.71.607 5.28 1.829M12 9v4m0 0l-1.5-1.5m1.5 1.5l1.5-1.5"/></svg>
+        </div>
+        <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-500">চিঠি প্রিন্ট</span>
+      </button>
+
+      <!-- Mobile Tab for Admin Approval -->
+      <button onclick="switchTab('admin-approval')" id="nav-admin-approval" class="nav-item admin-only flex-1 flex flex-col items-center py-1 rounded-xl text-amber-700 transition active:scale-90">
+        <div class="w-9 h-7 rounded-xl flex items-center justify-center transition-all bg-amber-50" id="iconWrap-admin-approval">
+          <span class="text-xs">🛡️</span>
+        </div>
+        <span class="text-[10px] font-extrabold mt-0.5 tracking-tight text-amber-800">অনুমোদন</span>
+      </button>
+
+    </nav>
+
+  </div>
 
 
   <!-- STATUS PICKER SHEET -->
@@ -516,7 +588,6 @@
       </div>
       <p class="text-xs font-bold text-slate-700">স্ট্যাটাস বাছাই করুন:</p>
       <div class="grid grid-cols-1 gap-2 text-xs font-bold" id="sheetStatusOptions">
-        <!-- Populated dynamically -->
       </div>
     </div>
   </div>
@@ -583,8 +654,8 @@
     </div>
   </div>
 
-  <!-- SCRIPT INCLUSION WITH CACHE-BUSTING -->
-  <script src="initial_data.js?v=20261020_res"></script>
-  <script src="app.js?v=20261020_res"></script>
+  <!-- SCRIPT INCLUSION -->
+  <script src="initial_data.js?v=20261020_fb"></script>
+  <script src="app.js?v=20261020_fb"></script>
 </body>
 </html>

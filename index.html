@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>Nazmul & Associates | Tax Master Control OS</title>
   
+  <!-- Favicons and Mobile App Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#0284c7">
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- SheetJS for Excel Export -->
@@ -68,12 +75,11 @@
   <!-- SCREEN A: LOGIN REQUIRED MODAL / OVERLAY -->
   <div id="authScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-6 border border-slate-100">
-      <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-600 to-blue-700 flex items-center justify-center text-white font-black text-2xl mx-auto shadow-xl shadow-sky-200">
-        N
+      <div class="flex items-center justify-center mx-auto">
+        <img src="logo-tight.png" alt="NAZMUL & ASSOCIATES" class="h-28 w-auto max-w-[220px] object-contain drop-shadow-sm select-none" />
       </div>
       <div>
-        <h2 class="text-lg font-black text-slate-900 tracking-tight">NAZMUL & ASSOCIATES</h2>
-        <p class="text-xs font-bold text-sky-700 mt-0.5 uppercase tracking-wider">Tax & VAT Management OS</p>
+        <p class="text-xs font-bold text-sky-700 uppercase tracking-wider">Client Management & Tax OS</p>
         <p class="text-xs text-slate-500 mt-2">সিস্টেমে প্রবেশের জন্য আপনার অফিসিয়াল গুগল অ্যাকাউন্ট দিয়ে লগইন করুন</p>
       </div>
 
@@ -89,10 +95,12 @@
   <!-- SCREEN B: APPROVAL PENDING GATE -->
   <div id="pendingApprovalScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-4 border border-amber-200">
-      <div class="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-black">
-        ⏳
+      <div class="flex items-center justify-center mx-auto mb-1">
+        <img src="logo-emblem.png" alt="Emblem" class="w-16 h-16 object-contain drop-shadow-sm" />
       </div>
-      <h3 class="text-base font-extrabold text-slate-900">অনুমোদনের জন্য অপেক্ষমাণ</h3>
+      <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold">
+        <span>⏳ অনুমোদনের জন্য অপেক্ষমাণ</span>
+      </div>
       <p class="text-xs text-slate-600 leading-relaxed">
         স্বাগতম, <strong id="pendingUserName" class="text-slate-900">ব্যবহারকারী</strong>!<br>
         আপনার ইমেইল: <span id="pendingUserEmail" class="font-mono text-sky-700 font-bold">-</span><br><br>
@@ -120,9 +128,7 @@
           
           <!-- Brand & Role Badge -->
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-700 flex items-center justify-center text-white font-black text-lg shadow-md shadow-sky-200">
-              N
-            </div>
+            <img src="logo-emblem.png" alt="Logo" class="w-10 h-10 object-contain drop-shadow-xs flex-shrink-0" />
             <div>
               <div class="flex items-center space-x-2">
                 <h1 class="text-sm md:text-base font-extrabold text-slate-900 leading-tight">NAZMUL & ASSOCIATES</h1>
@@ -431,16 +437,20 @@
         </div>
 
         <div id="print-area" class="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-card text-slate-900 space-y-5 max-w-4xl mx-auto">
-          <div class="text-center border-b-2 border-slate-900 pb-4">
-            <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-wide uppercase" id="pFirmName">NAZMUL & ASSOCIATES</h2>
-            <p class="text-xs font-bold text-sky-700 uppercase tracking-wider mt-1">TAX VAT Individual & Corporate Consultancy</p>
-            <p class="text-[11px] text-slate-500 mt-1" id="pFirmContact">Saiham Sky View Tower, Level 15-D, Bijoy Nagar, Dhaka • Mobile: +880 1898891224</p>
-          </div>
-
-          <div class="text-center">
-            <span class="inline-block px-4 py-1 bg-slate-100 text-slate-800 text-xs font-black uppercase tracking-wider rounded border border-slate-300">
-              Income Tax Document Requisition
-            </span>
+          <div class="flex flex-col sm:flex-row items-center sm:items-start justify-between border-b-2 border-slate-900 pb-4 gap-3 text-center sm:text-left">
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <img src="logo-tight.png" alt="Nazmul & Associates" class="h-16 w-auto object-contain">
+              <div>
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-wide uppercase" id="pFirmName">NAZMUL & ASSOCIATES</h2>
+                <p class="text-xs font-bold text-sky-700 uppercase tracking-wider mt-0.5">TAX VAT Individual & Corporate Consultancy</p>
+                <p class="text-[11px] text-slate-500 mt-0.5" id="pFirmContact">Saiham Sky View Tower, Level 15-D, Bijoy Nagar, Dhaka • Mobile: +880 1898891224</p>
+              </div>
+            </div>
+            <div class="self-center sm:self-start">
+              <span class="inline-block px-3 py-1 bg-slate-100 text-slate-800 text-[11px] font-black uppercase tracking-wider rounded border border-slate-300">
+                Income Tax Document Requisition
+              </span>
+            </div>
           </div>
 
           <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs grid grid-cols-2 gap-4">
